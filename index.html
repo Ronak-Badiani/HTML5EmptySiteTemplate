@@ -14,17 +14,41 @@ tr:nth-child(even) {background-color: #f2f2f2;}
 </style>
 </head>
 <body>
-	<input id="query" type="text" placeholder="Enter Query" size="60"> <input type="submit" onclick="executeQuery()">
-	<table id="showData">
-	</table>
+	<input id="query" type="text" placeholder="Enter Query" size="60">  <input type="submit" onclick="executeQuery('textbox')" value="Submit Query">
+	<br><br>
+	<select id="dropdown" onselect="executeQuery('dropdown')" onchange="executeQuery('dropdown')" placeholder="Example">
+		<option value="match (e:Event) return e">Show Event Data</option>
+		<option value="match (p:Person) return p">Show Person Data</option>
+		<option value="Match (p:Person) -[:Attending]-> (e:Event) return p,e">Show Event-Person Data</option>
+		<option value="Match (p:Person) -[:Attending]-> (e:Event) return e,count(p)">Show people count for each event</option>
+	</select>
+	<br><br>
+	
+	
+	<table id="showData"></table>
 </body>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 <script>
-	function executeQuery(){
-		var query = document.getElementById("query").value;
+	$(document).ready(function(){
+		executeQuery("dropdown");
+	}
+	);
+
+	function executeQuery(src){
+		var query = "";
+		if(src=="dropdown"){
+			var sel = document.getElementById("dropdown");
+			var opt = sel.options[sel.selectedIndex];
+			query = opt.value;
+		}
+		else{
+			query = document.getElementById("query").value;
+		}
+		
 		var finaldata = `{ "statements" : [ { "statement":\"`+query+`\"} ]	
 						}`;
-										
+		
+		
 		$.ajax({
             url: "http://52.230.216.195:7474/db/data/transaction/commit",
             type: "POST",
@@ -36,7 +60,7 @@ tr:nth-child(even) {background-color: #f2f2f2;}
             Accept: "application/json", charset: "UTF-8",
             
 			success: function (res) {
-                console.log(res);
+                //console.log(res);
                 var tables = res.results[0].columns;
                 var data = res.results[0].data;
                 var tableCol = [[]];
@@ -85,8 +109,13 @@ tr:nth-child(even) {background-color: #f2f2f2;}
                 divContainer.appendChild(table);
             },
 
-            data: finaldata
+            data: finaldata,
+			
+			
         })
+		.fail(function (jqXHR, textStatus, error) {
+			console.log("fail");
+		});
 	}
 	
 </script>
