@@ -1,11 +1,93 @@
-<!DOCTYPE html>
+<html>
+<head>
+<style>
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
 
-<html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <title></title>
-    </head>
-    <body>
-        
-    </body>
+th, td {
+  text-align: left;
+  padding: 8px;
+}
+tr:nth-child(even) {background-color: #f2f2f2;}
+</style>
+</head>
+<body>
+	<input id="query" type="text" placeholder="Enter Query" size="60"> <input type="submit" onclick="executeQuery()">
+	<table id="showData">
+	</table>
+</body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script>
+	function executeQuery(){
+		var query = document.getElementById("query").value;
+		var finaldata = `{ "statements" : [ { "statement":\"`+query+`\"} ]	
+						}`;
+										
+		$.ajax({
+            url: "http://52.230.216.195:7474/db/data/transaction/commit",
+            type: "POST",
+            headers: {
+                'Authorization': 'Basic ' + btoa("neo4j" + ":" + "ronak")
+
+            },
+            contentType: "application/json",
+            Accept: "application/json", charset: "UTF-8",
+            
+			success: function (res) {
+                console.log(res);
+                var tables = res.results[0].columns;
+                var data = res.results[0].data;
+                var tableCol = [[]];
+                for (var i = 0; i < tables.length; i++) {
+                    var col = [];
+					if(typeof(data[0].row[i]) != "object"){
+						col.push(tables[i]);
+					}
+					else{
+						for (var key in data[0].row[i]) {
+							col.push(key);
+						}
+					}
+                    tableCol[i] = col;
+                }
+                var table = document.createElement("table");
+                var tr = table.insertRow(-1);
+
+                for (var i = 0; i < tableCol.length; i++) {
+                    for (var j = 0; j < tableCol[i].length; j++) {
+                        var th = document.createElement("th");
+                        th.innerHTML = tableCol[i][j];
+                        tr.appendChild(th);
+                    }
+                }
+
+
+                for (var r = 0; r < data.length; r++) {
+                    tr = table.insertRow(-1);
+                    for (var c = 0; c < tables.length; c++) {
+                        for (var i = 0; i < tableCol[c].length; i++) {
+                            var tabCell = tr.insertCell(-1);
+							if(typeof(data[0].row[c]) != "object"){
+								tabCell.innerHTML = data[r].row[c];
+							}
+							else{
+								tabCell.innerHTML = (data[r].row[c])[tableCol[c][i]];
+							}    
+                        }
+                    }
+                }
+
+
+                var divContainer = document.getElementById("showData");
+                divContainer.innerHTML = "";
+                divContainer.appendChild(table);
+            },
+
+            data: finaldata
+        })
+	}
+	
+</script>
 </html>
